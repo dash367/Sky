@@ -2,11 +2,13 @@ package com.craftinginterepter.sky;
 
 import static com.craftinginterepter.sky.TokenType.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Parser {
 
-    private static class ParseError extends RuntimeException {}
+    private static class ParseError extends RuntimeException {
+    }
 
     private final List<Token> tokens;
     private int current = 0;
@@ -15,12 +17,30 @@ public class Parser {
         this.tokens = tokens;
     }
 
-    Expr parse(){
-        try{
-            return expression();
-        } catch(ParseError error){
-            return null;
+    List<Stmt> parse() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!isAtEnd()) {
+            statements.add(statement());
         }
+        return statements;
+    }
+
+    private Stmt statement() {
+        if (match(PRINT))
+            return printStatement();
+        return expressionStatement();
+    }
+
+    private Stmt printStatement() {
+        Expr value = expression();
+        consume(SEMICOLON, "Expect ';' after value.");
+        return new Stmt.Print(value);
+    }
+
+    private Stmt expressionStatement() {
+        Expr expr = expression();
+        consume(SEMICOLON, "Expect ';' after expression.");
+        return new Stmt.Expression(expr);
     }
 
     private Expr expression() {
@@ -51,10 +71,10 @@ public class Parser {
         return expr;
     }
 
-    private Expr term(){
+    private Expr term() {
         Expr expr = factor();
 
-        while(match(MINUS, PLUS)){
+        while (match(MINUS, PLUS)) {
             Token operator = previous();
             Expr right = factor();
             expr = new Expr.Binary(expr, operator, right);
@@ -123,12 +143,13 @@ public class Parser {
         return new ParseError();
     }
 
-    private void synchronize(){
+    private void synchronize() {
         advance();
 
         while (!isAtEnd()) {
-            if(previous().type == SEMICOLON) return;
-            
+            if (previous().type == SEMICOLON)
+                return;
+
             switch (peek().type) {
                 case CLASS:
                 case FUN:
@@ -138,7 +159,7 @@ public class Parser {
                 case WHILE:
                 case PRINT:
                 case RETURN:
-                return;
+                    return;
                 default:
                     break;
             }
