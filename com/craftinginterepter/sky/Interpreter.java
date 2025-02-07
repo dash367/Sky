@@ -2,10 +2,14 @@ package com.craftinginterepter.sky;
 
 import java.util.List;
 
+import com.craftinginterepter.sky.Expr.Assign;
+import com.craftinginterepter.sky.Expr.Variable;
 import com.craftinginterepter.sky.Stmt.Expression;
 import com.craftinginterepter.sky.Stmt.Print;
+import com.craftinginterepter.sky.Stmt.Var;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+    private Enviroment enviroment = new Enviroment();
 
     void interpret(List<Stmt> statements) {
         try {
@@ -102,6 +106,28 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return null;
     }
 
+    @Override
+    public Void visitVarStmt(Var stmt) {
+        Object value = null;
+        if(stmt.initializer != null){
+            value = evaluate(stmt.initializer);
+        }
+        enviroment.define(stmt.name.lexeme, value);
+        return null;
+    }
+
+    @Override
+    public Object visitVariableExpr(Variable expr) {
+       return enviroment.get(expr.name);
+    }
+
+    @Override
+    public Object visitAssignExpr(Assign expr) {
+        Object value = evaluate(expr.value);
+        enviroment.assign(expr.name, value);
+        return value;
+    }
+
     // helper methods
     private Object evaluate(Expr expr) {
         return expr.accept(this);
@@ -147,5 +173,6 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             return;
         throw new RuntimeError(operator, "[ERROR] Operand must be a number.");
     }
+
 
 }

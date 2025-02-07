@@ -1,5 +1,7 @@
 package com.craftinginterepter.sky;
 
+import com.craftinginterepter.sky.Expr.Variable;
+
 public class AstPrinter implements Expr.Visitor<String> {
     public static void main(String[] args) {
         Expr expression = new Expr.Binary(
@@ -50,5 +52,11 @@ public class AstPrinter implements Expr.Visitor<String> {
         stringBuilder.append(")");
 
         return stringBuilder.toString();
+    }
+
+    @Override
+    public String visitVariableExpr(Variable expr) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitVariableExpr'");
     }
 }
