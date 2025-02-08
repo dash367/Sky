@@ -1,12 +1,12 @@
-{
-    var a = 10;
-    var b = 10;
-
-    if(a > b){
-        print "Larger";
-    } else if(a < b){
-        print "Less than";
-    } else{
-        print "Equality";
+var i = 0;
+while (i < 10) {
+    if (i == 5) {
+        break;
     }
+    if (i == 3) {
+        i = i + 1;
+        continue;
+    }
+    print(i);
+    i = i + 1;
 }

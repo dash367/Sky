@@ -3,6 +3,7 @@ package com.craftinginterepter.sky;
 import static com.craftinginterepter.sky.TokenType.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Parser {
@@ -28,6 +29,15 @@ public class Parser {
     private Stmt statement() {
         if (match(PRINT))
             return printStatement();
+        if (match(FOR)) {
+            return forStatement();
+        }
+        if (match(WHILE))
+            return whileStatement();
+        if (match(BREAK))
+            return breakStatement();
+        if (match(CONTINUE))
+            return continueStatement();
         if (match(IF))
             return ifStatement();
         if (match(LEFT_BRACE))
@@ -36,9 +46,51 @@ public class Parser {
     }
 
     private Stmt printStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'print'.");
         Expr value = expression();
+        consume(RIGHT_PAREN, "Expect ')' after print statement.");
         consume(SEMICOLON, "Expect ';' after value.");
         return new Stmt.Print(value);
+    }
+
+    private Stmt forStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'for'.");
+
+        Stmt init;
+        if (match(SEMICOLON)) {
+            init = null;
+        } else if (match(VAR)) {
+            init = varDeclaration();
+        } else {
+            init = expressionStatement();
+        }
+
+        Expr condition = null;
+        if (!check(SEMICOLON)) {
+            condition = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after for loop condition.");
+
+        Expr incr = null;
+        if (!check(SEMICOLON)) {
+            incr = expression();
+        }
+        consume(RIGHT_PAREN, "Expect ')' after for loop clauses.");
+        Stmt body = statement();
+
+        if (incr != null) {
+            body = new Stmt.Block(Arrays.asList(body, new Stmt.Expression(incr)));
+        }
+
+        if (condition == null)
+            condition = new Expr.Literal(true);
+        body = new Stmt.While(condition, body);
+
+        if (init != null) {
+            body = new Stmt.Block(Arrays.asList(init, body));
+        }
+
+        return body;
     }
 
     private Stmt ifStatement() {
@@ -51,6 +103,26 @@ public class Parser {
             elseBranch = statement();
         }
         return new Stmt.If(condition, thenBranch, elseBranch);
+    }
+
+    private Stmt whileStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after loop condition.");
+        Stmt body = statement();
+        return new Stmt.While(condition, body);
+    }
+
+    private Stmt breakStatement(){
+        Stmt breakStmt = new Stmt.Break();
+        consume(SEMICOLON, "Expect ';' after 'break'.");
+        return breakStmt;
+    }
+
+    private Stmt continueStatement(){
+        Stmt continueStmt = new Stmt.Continue();
+        consume(SEMICOLON, "Expect ';' after 'break'.");
+        return continueStmt;
     }
 
     private Stmt varDeclaration() {

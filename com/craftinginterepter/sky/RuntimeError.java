@@ -7,4 +7,17 @@ public class RuntimeError extends RuntimeException {
         super(message);
         this.token = token;
     }
+
+    static class BreakException extends RuntimeException {
+        BreakException() {
+            super(null, null, false, false); 
+        }
+    }
+    
+    static class ContinueException extends RuntimeException {
+        ContinueException() {
+            super(null, null, false, false);
+        }
+    }
 }
+

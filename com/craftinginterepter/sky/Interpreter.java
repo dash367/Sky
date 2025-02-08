@@ -5,11 +5,16 @@ import java.util.List;
 import com.craftinginterepter.sky.Expr.Assign;
 import com.craftinginterepter.sky.Expr.Logical;
 import com.craftinginterepter.sky.Expr.Variable;
+import com.craftinginterepter.sky.RuntimeError.BreakException;
+import com.craftinginterepter.sky.RuntimeError.ContinueException;
 import com.craftinginterepter.sky.Stmt.Block;
+import com.craftinginterepter.sky.Stmt.Break;
+import com.craftinginterepter.sky.Stmt.Continue;
 import com.craftinginterepter.sky.Stmt.Expression;
 import com.craftinginterepter.sky.Stmt.If;
 import com.craftinginterepter.sky.Stmt.Print;
 import com.craftinginterepter.sky.Stmt.Var;
+import com.craftinginterepter.sky.Stmt.While;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     private Environment environment = new Environment();
@@ -159,6 +164,30 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 return left;
         }
         return evaluate(expr.right);
+    }
+
+    @Override
+    public Void visitWhileStmt(While stmt) {
+        while (isTruthy(evaluate(stmt.condition))) {
+            try {
+                execute(stmt.body);
+            } catch (BreakException e) {
+                break;
+            } catch (ContinueException e) {
+                continue;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitBreakStmt(Break stmt) {
+        throw new RuntimeError.BreakException();
+    }
+
+    @Override
+    public Void visitContinueStmt(Continue stmt) {
+        throw new RuntimeError.ContinueException();
     }
 
     // helper methods

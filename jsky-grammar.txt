@@ -13,7 +13,9 @@ primary     → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" 
 program     → declaration* EOF ;
 declaration → varDecl | statement ;
 varDecl     → "var" IDENTIFIER ( "=" expression )? ";" ;
-statement   → exprStmt | ifStmt | printStmt | block ;
+statement   → exprStmt | ifStmt | printStmt | whileStmt | forStmt | block ;
+whileStmt   → "while" "(" expression ")" statement;
+forStmt     → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ";" ")" statement ; 
 ifStmt      → "if" "(" expression ")" statement ( "else" statement )? ;
 block       → "{" declaration* "}" ;
 exprStmt    → expression ";" ;
