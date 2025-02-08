@@ -27,6 +27,10 @@ class Sky {
 
     // running in cmd or in a terminal
     private static void runFile(String path) throws IOException {
+        if (!path.endsWith(".sky")) {
+            System.out.println("[ERROR] File must have a .sky extension.");
+            System.exit(64);
+        }
         byte[] bytes = Files.readAllBytes(Paths.get(path));
         run(new String(bytes, Charset.defaultCharset()));
         if (hadError)

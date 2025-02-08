@@ -3,13 +3,16 @@ package com.craftinginterepter.sky;
 import java.util.List;
 
 import com.craftinginterepter.sky.Expr.Assign;
+import com.craftinginterepter.sky.Expr.Logical;
 import com.craftinginterepter.sky.Expr.Variable;
+import com.craftinginterepter.sky.Stmt.Block;
 import com.craftinginterepter.sky.Stmt.Expression;
+import com.craftinginterepter.sky.Stmt.If;
 import com.craftinginterepter.sky.Stmt.Print;
 import com.craftinginterepter.sky.Stmt.Var;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
-    private Enviroment enviroment = new Enviroment();
+    private Environment environment = new Environment();
 
     void interpret(List<Stmt> statements) {
         try {
@@ -109,23 +112,53 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitVarStmt(Var stmt) {
         Object value = null;
-        if(stmt.initializer != null){
+        if (stmt.initializer != null) {
             value = evaluate(stmt.initializer);
         }
-        enviroment.define(stmt.name.lexeme, value);
+        environment.define(stmt.name.lexeme, value);
         return null;
     }
 
     @Override
     public Object visitVariableExpr(Variable expr) {
-       return enviroment.get(expr.name);
+        return environment.get(expr.name);
     }
 
     @Override
     public Object visitAssignExpr(Assign expr) {
         Object value = evaluate(expr.value);
-        enviroment.assign(expr.name, value);
+        environment.assign(expr.name, value);
         return value;
+    }
+
+    @Override
+    public Void visitBlockStmt(Block stmt) {
+        executeBlock(stmt.statements, new Environment(environment));
+        return null;
+    }
+
+    @Override
+    public Void visitIfStmt(If stmt) {
+        if (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.thenBranch);
+        } else if (stmt.elseBranch != null) {
+            execute(stmt.elseBranch);
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitLogicalExpr(Logical expr) {
+        Object left = evaluate(expr.left);
+
+        if (expr.operator.type == TokenType.OR) {
+            if (isTruthy(left))
+                return left;
+        } else {
+            if (!isTruthy(left))
+                return left;
+        }
+        return evaluate(expr.right);
     }
 
     // helper methods
@@ -137,15 +170,35 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         stmt.accept(this);
     }
 
+    void executeBlock(List<Stmt> statements,
+            Environment environment) {
+        Environment previous = this.environment;
+        try {
+            this.environment = environment;
+            for (Stmt statement : statements) {
+                execute(statement);
+            }
+        } finally {
+            this.environment = previous;
+        }
+    }
+
     private String stringify(Object object) {
-        if (object == null)
-            return "nil";
+        if (object == null) {
+            return "null";
+        }
         if (object instanceof Double) {
             String text = object.toString();
             if (text.endsWith(".0")) {
                 text = text.substring(0, text.length() - 2);
             }
             return text;
+        }
+        if (object instanceof String) {
+            String str = object.toString();
+            str = str.replace("\\t", "\t");
+            str = str.replace("\\n", "\n");
+            return str;
         }
         return object.toString();
     }
@@ -167,12 +220,10 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return left.equals(right);
     }
 
-
     private void checkNumberOperands(Token operator, Object left, Object right) {
         if (left instanceof Double && right instanceof Double)
             return;
         throw new RuntimeError(operator, "[ERROR] Operand must be a number.");
     }
-
 
 }

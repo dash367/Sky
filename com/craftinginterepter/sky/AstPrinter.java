@@ -1,5 +1,7 @@
 package com.craftinginterepter.sky;
 
+import com.craftinginterepter.sky.Expr.Assign;
+import com.craftinginterepter.sky.Expr.Logical;
 import com.craftinginterepter.sky.Expr.Variable;
 
 public class AstPrinter implements Expr.Visitor<String> {
@@ -58,5 +60,17 @@ public class AstPrinter implements Expr.Visitor<String> {
     public String visitVariableExpr(Variable expr) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'visitVariableExpr'");
+    }
+
+    @Override
+    public String visitAssignExpr(Assign expr) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitAssignExpr'");
+    }
+
+    @Override
+    public String visitLogicalExpr(Logical expr) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitLogicalExpr'");
     }
 }
