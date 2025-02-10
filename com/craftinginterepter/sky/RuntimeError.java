@@ -8,16 +8,24 @@ public class RuntimeError extends RuntimeException {
         this.token = token;
     }
 
-    static class BreakException extends RuntimeException {
-        BreakException() {
-            super(null, null, false, false); 
+    static class Return extends RuntimeException {
+        final Object value;
+
+        Return(Object value) {
+            super(null, null, false, false);
+            this.value = value;
         }
     }
-    
+
+    static class BreakException extends RuntimeException {
+        BreakException() {
+            super(null, null, false, false);
+        }
+    }
+
     static class ContinueException extends RuntimeException {
         ContinueException() {
             super(null, null, false, false);
         }
     }
 }
-

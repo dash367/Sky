@@ -6,17 +6,22 @@ equality    → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison  → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term        → factor ( ( "-" | "+" ) factor )* ;
 factor      → unary ( ( "/" | "*" ) unary )* ;
-unary       → ( "!" | "-" ) unary
-            | primary ;
+unary       → ( "!" | "-" ) unary | call ;
+call        → primary ( "(" arguments? ")" )* ;
+arguments   → expression ( "," expression )* ;
 primary     → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER;
 
 program     → declaration* EOF ;
-declaration → varDecl | statement ;
+declaration → funDecl | varDecl | statement ;
+funDecl     → "fun" function;
+function    → IDENTIFIER "(" parameters* ")" block;
+parameters  → IDENTIFIER ( "," IDENTIFIER )* ;
 varDecl     → "var" IDENTIFIER ( "=" expression )? ";" ;
-statement   → exprStmt | ifStmt | printStmt | whileStmt | forStmt | block | breakStmt | continueStmt ;
+statement   → exprStmt | ifStmt | printStmt | whileStmt | forStmt | returnStmt | block | breakStmt | continueStmt ;
 whileStmt   → "while" "(" expression ")" statement;
 forStmt     → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ";" ")" statement ; 
 ifStmt      → "if" "(" expression ")" statement ( "else" statement )? ;
+returnStmt  → "return" expression? ";" ;
 block       → "{" declaration* "}" ;
 exprStmt    → expression ";" ;
 printStmt   → "print" expression ";" ;

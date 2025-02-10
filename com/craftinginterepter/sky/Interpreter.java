@@ -1,8 +1,10 @@
 package com.craftinginterepter.sky;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.craftinginterepter.sky.Expr.Assign;
+import com.craftinginterepter.sky.Expr.Call;
 import com.craftinginterepter.sky.Expr.Logical;
 import com.craftinginterepter.sky.Expr.Postfix;
 import com.craftinginterepter.sky.Expr.Prefix;
@@ -13,13 +15,36 @@ import com.craftinginterepter.sky.Stmt.Block;
 import com.craftinginterepter.sky.Stmt.Break;
 import com.craftinginterepter.sky.Stmt.Continue;
 import com.craftinginterepter.sky.Stmt.Expression;
+import com.craftinginterepter.sky.Stmt.Function;
 import com.craftinginterepter.sky.Stmt.If;
 import com.craftinginterepter.sky.Stmt.Print;
+import com.craftinginterepter.sky.Stmt.Return;
 import com.craftinginterepter.sky.Stmt.Var;
 import com.craftinginterepter.sky.Stmt.While;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
-    private Environment environment = new Environment();
+    final Environment globals = new Environment();
+    private Environment environment = globals;
+
+    Interpreter() {
+        globals.define("clock", new SkyCallable() {
+            @Override
+            public int arity() {
+                return 0;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter,
+                    List<Object> arguments) {
+                return (double) System.currentTimeMillis() / 1000.0;
+            }
+
+            @Override
+            public String toString() {
+                return "<native fn>";
+            }
+        });
+    }
 
     void interpret(List<Stmt> statements) {
         try {
@@ -175,7 +200,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     public Void visitWhileStmt(While stmt) {
         while (true) {
             try {
-                if (!isTruthy(evaluate(stmt.condition))) break;
+                if (!isTruthy(evaluate(stmt.condition)))
+                    break;
                 execute(stmt.body);
             } catch (BreakException e) {
                 break;
@@ -185,7 +211,6 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
         return null;
     }
-    
 
     @Override
     public Void visitBreakStmt(Break stmt) {
@@ -212,14 +237,49 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitPostfixExpr(Postfix expr) {
         Object value = evaluate(expr.expression);
-        Object result = value; 
+        Object result = value;
         if (expr.operator.type == TokenType.PLUS_PLUS) {
             value = (double) value + 1;
         } else if (expr.operator.type == TokenType.MINUS_MINUS) {
             value = (double) value - 1;
         }
         environment.assign(((Expr.Variable) expr.expression).name, value);
-        return result; 
+        return result;
+    }
+
+    @Override
+    public Object visitCallExpr(Call expr) {
+        Object callee = evaluate(expr.callee);
+        List<Object> arguments = new ArrayList<>();
+        for (Expr argument : expr.arguments) {
+            arguments.add(evaluate(argument));
+        }
+        if (!(callee instanceof SkyCallable)) {
+            throw new RuntimeError(expr.paren,
+                    "Can only call functions and classes.");
+        }
+        SkyCallable function = (SkyCallable) callee;
+        if (arguments.size() != function.arity()) {
+            throw new RuntimeError(expr.paren, "Expected " +
+                    function.arity() + " arguments but got " +
+                    arguments.size() + ".");
+        }
+        return function.call(this, arguments);
+    }
+
+    @Override
+    public Void visitFunctionStmt(Function stmt) {
+        SkyFunction function = new SkyFunction(stmt, environment);
+        environment.define(stmt.name.lexeme, function);
+        return null;
+    }
+
+    @Override
+    public Void visitReturnStmt(Return stmt) {
+        Object value = null;
+        if (stmt.value != null)
+            value = evaluate(stmt.value);
+        throw new RuntimeError.Return(value);
     }
 
     // helper methods
@@ -286,5 +346,4 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             return;
         throw new RuntimeError(operator, "[ERROR] Operand must be a number.");
     }
-
 }

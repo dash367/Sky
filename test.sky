@@ -1,26 +1,9 @@
-var i = 0;
-
-while (i < 5) {
-    var j = 0;
-    print("Outer loop: i = " + i);
-    
-    while (j < 5) {
-        print("   Inner loop: j = " + j);
-        
-        if (j == 2) {
-            print("   Breaking inner loop at j = 2");
-            break; // Breaks only the inner loop
-        }
-        
-        j++;
-    }
-
-    if (i == 3) {
-        print("Breaking outer loop at i = 3");
-        break; // Breaks the outer loop
-    }
-
-    i++;
+fun fib(n) {
+    if (n <= 1) 
+        return n;
+    return fib(n - 2) + fib(n - 1);
 }
 
-print("Both loops finished");
+for (var i = 0; i < 20; i++) {
+    print(fib(i));
+}
