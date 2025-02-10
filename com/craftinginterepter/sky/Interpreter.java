@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.craftinginterepter.sky.Expr.Assign;
 import com.craftinginterepter.sky.Expr.Logical;
+import com.craftinginterepter.sky.Expr.Postfix;
+import com.craftinginterepter.sky.Expr.Prefix;
 import com.craftinginterepter.sky.Expr.Variable;
 import com.craftinginterepter.sky.RuntimeError.BreakException;
 import com.craftinginterepter.sky.RuntimeError.ContinueException;
@@ -108,6 +110,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             case STAR:
                 checkNumberOperands(expr.operator, left, right);
                 return (double) left * (double) right;
+            case MODULUS:
+                checkNumberOperands(expr.operator, left, right);
+                return (double) left % (double) right;
             default:
                 break;
         }
@@ -168,8 +173,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitWhileStmt(While stmt) {
-        while (isTruthy(evaluate(stmt.condition))) {
+        while (true) {
             try {
+                if (!isTruthy(evaluate(stmt.condition))) break;
                 execute(stmt.body);
             } catch (BreakException e) {
                 break;
@@ -179,6 +185,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
         return null;
     }
+    
 
     @Override
     public Void visitBreakStmt(Break stmt) {
@@ -188,6 +195,31 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitContinueStmt(Continue stmt) {
         throw new RuntimeError.ContinueException();
+    }
+
+    @Override
+    public Object visitPrefixExpr(Prefix expr) {
+        Object value = evaluate(expr.expression);
+        if (expr.operator.type == TokenType.PLUS_PLUS) {
+            value = (double) value + 1;
+        } else if (expr.operator.type == TokenType.MINUS_MINUS) {
+            value = (double) value - 1;
+        }
+        environment.assign(((Expr.Variable) expr.expression).name, value);
+        return value;
+    }
+
+    @Override
+    public Object visitPostfixExpr(Postfix expr) {
+        Object value = evaluate(expr.expression);
+        Object result = value; 
+        if (expr.operator.type == TokenType.PLUS_PLUS) {
+            value = (double) value + 1;
+        } else if (expr.operator.type == TokenType.MINUS_MINUS) {
+            value = (double) value - 1;
+        }
+        environment.assign(((Expr.Variable) expr.expression).name, value);
+        return result; 
     }
 
     // helper methods

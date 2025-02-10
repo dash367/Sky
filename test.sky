@@ -1,12 +1,26 @@
 var i = 0;
-while (i < 10) {
-    if (i == 5) {
-        break;
+
+while (i < 5) {
+    var j = 0;
+    print("Outer loop: i = " + i);
+    
+    while (j < 5) {
+        print("   Inner loop: j = " + j);
+        
+        if (j == 2) {
+            print("   Breaking inner loop at j = 2");
+            break; // Breaks only the inner loop
+        }
+        
+        j++;
     }
+
     if (i == 3) {
-        i = i + 1;
-        continue;
+        print("Breaking outer loop at i = 3");
+        break; // Breaks the outer loop
     }
-    print(i);
-    i = i + 1;
+
+    i++;
 }
+
+print("Both loops finished");

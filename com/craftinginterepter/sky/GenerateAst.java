@@ -19,7 +19,11 @@ public class GenerateAst {
                 "Literal    : Object value",
                 "Logical    : Expr left, Token operator, Expr right",
                 "Unary      : Token operator, Expr right",
-                "Variable   : Token name"));
+                "Variable   : Token name",
+                "Prefix     : Token operator, Expr expression",
+                "Postfix     : Token operator, Expr expression"
+
+        ));
 
         defineAst(outputDir, "Stmt", Arrays.asList(
                 "Block : List<Stmt> statements",
@@ -28,8 +32,9 @@ public class GenerateAst {
                         " Stmt elseBranch",
                 "Print : Expr expression",
                 "Var : Token name, Expr initializer",
-                "While : Expr condition, Stmt body"
-                ));
+                "While : Expr condition, Stmt body",
+                "Break : ",
+                "Continue : "));
     }
 
     private static void defineAst(
@@ -59,31 +64,38 @@ public class GenerateAst {
     private static void defineType(
             PrintWriter writer, String baseName,
             String className, String fieldList) {
-        writer.println(" static class " + className + " extends " +
+        writer.println("    static class " + className + " extends " +
                 baseName + " {");
 
-        // Constructor
-        writer.println(" " + className + "(" + fieldList + ") {");
+        // Check if this class has fields
+        if (!fieldList.isEmpty()) {
+            writer.println("        " + className + "(" + fieldList + ") {");
 
-        // Store parameters
-        String[] fields = fieldList.split(", ");
-        for (String field : fields) {
-            String name = field.split(" ")[1];
-            writer.println(" this." + name + " = " + name + ";");
+            // Store parameters
+            String[] fields = fieldList.split(", ");
+            for (String field : fields) {
+                String name = field.split(" ")[1];
+                writer.println("            this." + name + " = " + name + ";");
+            }
+            writer.println("        }");
+
+            // Fields
+            for (String field : fields) {
+                writer.println("        final " + field + ";");
+            }
+        } else {
+            // Constructor for fieldless classes
+            writer.println("        " + className + "() { }");
         }
+
         // Visitor pattern
-        writer.println("    }");
         writer.println();
-        writer.println(" @Override");
-        writer.println(" <R> R accept(Visitor<R> visitor) {");
-        writer.println(" return visitor.visit" +
+        writer.println("        @Override");
+        writer.println("        <R> R accept(Visitor<R> visitor) {");
+        writer.println("            return visitor.visit" +
                 className + baseName + "(this);");
-        writer.println("    }");
+        writer.println("        }");
 
-        // Fields
-        for (String field : fields) {
-            writer.println("    final " + field + ";");
-        }
         writer.println("    }");
     }
 

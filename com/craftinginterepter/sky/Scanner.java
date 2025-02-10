@@ -76,11 +76,19 @@ public class Scanner {
             case '.':
                 addToken(DOT);
                 break;
-            case '-':
-                addToken(MINUS);
-                break;
             case '+':
-                addToken(PLUS);
+                if (match('+')) {
+                    addToken(PLUS_PLUS);
+                } else {
+                    addToken(PLUS); 
+                }
+                break;
+            case '-':
+                if (match('-')) {
+                    addToken(MINUS_MINUS); 
+                } else {
+                    addToken(MINUS);
+                }
                 break;
             case ';':
                 addToken(SEMICOLON);
@@ -109,6 +117,9 @@ public class Scanner {
                     addToken(SLASH);
                 }
                 break;
+            case '%':
+                addToken(MODULUS); 
+                break;   
             case ' ':
             case '\r':
             case '\t':

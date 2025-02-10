@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Parser {
+    private int loopDepth = 0;
 
     private static class ParseError extends RuntimeException {
     }
@@ -72,12 +73,13 @@ public class Parser {
         consume(SEMICOLON, "Expect ';' after for loop condition.");
 
         Expr incr = null;
-        if (!check(SEMICOLON)) {
+        if (!check(RIGHT_PAREN)) {
             incr = expression();
         }
         consume(RIGHT_PAREN, "Expect ')' after for loop clauses.");
+        loopDepth++;
         Stmt body = statement();
-
+        loopDepth--;
         if (incr != null) {
             body = new Stmt.Block(Arrays.asList(body, new Stmt.Expression(incr)));
         }
@@ -109,20 +111,26 @@ public class Parser {
         consume(LEFT_PAREN, "Expect '(' after 'while'.");
         Expr condition = expression();
         consume(RIGHT_PAREN, "Expect ')' after loop condition.");
+        loopDepth++;
         Stmt body = statement();
+        loopDepth--;
         return new Stmt.While(condition, body);
     }
 
-    private Stmt breakStatement(){
-        Stmt breakStmt = new Stmt.Break();
+    private Stmt breakStatement() {
+        if (loopDepth == 0) {
+            throw error(previous(), "Cannot use 'break' outside of a loop.");
+        }
         consume(SEMICOLON, "Expect ';' after 'break'.");
-        return breakStmt;
+        return new Stmt.Break();
     }
 
-    private Stmt continueStatement(){
-        Stmt continueStmt = new Stmt.Continue();
-        consume(SEMICOLON, "Expect ';' after 'break'.");
-        return continueStmt;
+    private Stmt continueStatement() {
+        if (loopDepth == 0) {
+            throw error(previous(), "Cannot use 'continue' outside of a loop.");
+        }
+        consume(SEMICOLON, "Expect ';' after 'continue'.");
+        return new Stmt.Continue();
     }
 
     private Stmt varDeclaration() {
@@ -237,7 +245,7 @@ public class Parser {
 
     private Expr factor() {
         Expr expr = unary();
-        while (match(SLASH, STAR)) {
+        while (match(SLASH, STAR, MODULUS)) {
             Token operator = previous();
             Expr right = unary();
             expr = new Expr.Binary(expr, operator, right);
@@ -246,6 +254,12 @@ public class Parser {
     }
 
     private Expr unary() {
+        if (match(PLUS_PLUS, MINUS_MINUS)) {
+            Token operator = previous();
+            Expr right = unary();
+            return new Expr.Prefix(operator, right);
+        }
+
         if (match(BANG, MINUS)) {
             Token operator = previous();
             Expr right = unary();
@@ -265,14 +279,21 @@ public class Parser {
             return new Expr.Literal(previous().literal);
         }
         if (match(IDENTIFIER)) {
-            return new Expr.Variable(previous());
+            Expr expr = new Expr.Variable(previous());
+
+            // Check if there's a postfix increment/decrement
+            if (match(PLUS_PLUS, MINUS_MINUS)) {
+                Token operator = previous();
+                return new Expr.Postfix(operator, expr);
+            }
+
+            return expr;
         }
         if (match(LEFT_PAREN)) {
             Expr expr = expression();
             consume(RIGHT_PAREN, "[ERROR] Expect ')' after expression.");
             return new Expr.Grouping(expr);
         }
-
         throw error(peek(), "[ERROR] Expect expression");
     }
 
